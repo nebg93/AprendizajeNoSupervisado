@@ -1101,7 +1101,7 @@ dendrogram <- cut(dendrogram, h=1.4)
 plot(dendrogram$upper)
 ```
 <div style="text-align: justify; text-indent: 2em; line-height: 30px;">
-Definitivamente para este set de datos el clustering jerárquico (single y average) es más acertado, a diferencia del set de datos a.csv en el que k-means siempre daba mejores resultados. Para este caso en partcular los métodos single y average dan exactamente igual.
+Definitivamente para este set de datos el clustering jerárquico (single) es más acertado, a diferencia del set de datos a.csv en el que k-means siempre daba mejores resultados. Para este caso en partcular los métodos single y average dan exactamente igual.
 </div>
 
 <h3>Dataset "S.csv"</h3>
