@@ -28,7 +28,6 @@ k_means <- function(x, n){
   if (ncol(x)==10) {
     x$V11 <- k_means$cluster
     plot(x, col=x$V11, pch=19, cex=0.5, main="K-Medias")
-    points(k_means$centers, pch=19)
     return(x$V11)
   }
   if (ncol(x)==3) {
@@ -38,6 +37,7 @@ k_means <- function(x, n){
     return(x$V4)
   }
   if(ncol(x)==2){
+    print("AQUI!")
     x$V3 <- k_means$cluster
     plot(x$V1, x$V2, col=x$V3, pch=19, cex=0.5, main="K-Medias")
     points(k_means$centers, pch=19)

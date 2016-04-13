@@ -1,0 +1,1237 @@
+---
+title: "Tarea 03"
+author: "Nadia Bastidas"
+date: "5 de abril de 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<div style="text-align: center"><h2>Clustering</h2></div>
+
+<div style="text-align: center"><h3>Introducción</h3></div>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+El agrupamiento de datos (Clustering), clasificación no supervisada, es un método que tiene por objetivo particionar o segmentar un conjunto de datos o individuos en grupos. Los grupos se forman basados en la similaridad de los datos o individuos en ciertas variables. Como los grupos no son dados a priori el experto debe dar una interpretación de los clusters que se forman. La agrupación de datos a menudo se confunde con la clasificación, en la que los objetos se asignan a clases predefinidas. La diferencia está en que el objetivo de la agrupación de datos es definir las distintas clases encontradas en un set de datos, en cambio, cuando hablamos de clasificación las clases ya han sido previamente definidas.
+</div>
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+En el siguiente estudio se observan ejemplos de agrupación de datos con distintos datasets. Cada ejemplo tiene distinta cantidad de variables, distinta estructura y se espera a través del uso de métodos exploratorios identificar y elaborar soluciones a problemas especí???cos de cada dataset. Se escogerán también, en base a los conocimientos adquiridos en clase, el mejor algoritmo de clustering.
+</div>
+
+</br>
+<h3>Preparamos el entorno</h3>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Cargamos las diferentes librerías que vamos a utilizar. Para el estudio de los datasets se utilizaron las siguientes:
+</div>
+
+```{r}
+#install.packages("plot3D")
+#install.packages("rgl")
+#install.packages("scatterplot3d")
+#install.packages("caret")
+library("plot3D")
+library("rgl")
+library("scatterplot3d")
+library("caret")
+
+#Cargamos el archivo con las funciones realizadas, que luego serán explicadas (al final del documento), entre ellas:
+# - K-means
+# - My Own K-means
+# - Elbow Method
+# - Class_help (help, h, s)
+# - Class_help2 (h,s)
+
+source("funciones.R")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Ajustamos también la paleta de colores a nuestra conveniencia
+</div>
+
+```{r}
+#Ajustando la paleta de colores
+
+x <- c("turquoise3", "violetred3", "gray30", "greenyellow", "purple", "firebrick3", "deepskyblue1", "deeppink")
+mycol<-adjustcolor(x)
+palette(mycol)
+```
+
+</br>
+<h3>Dataset "A"</h3>
+
+<h4>Carga de la data y análisis exploratorio</h4>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realiza la carga de la data del dataset a.csv y realizamos el análisis exploratorio:
+</div>
+
+```{r}
+a<-read.csv("a.csv", header = F)
+dim(a)
+summary(a)
+
+#Al observar que el mínimo en la columna V3 (la columna clase) es 0, sumamos 1 al valor de la columna para no tener problemas con los colores al graficar:
+a$V3 = a$V3 + 1
+
+#Cantidad de individuos por clase
+table(a$V3)
+```
+```{r, echo=FALSE}
+plot(a, main = "Diagrama de dispersión de a.csv", col=a$V3)
+plot(a$V1, a$V2, col=a$V3, main = "a.csv")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se pueden observar entonces 3 grupos definidos en este dataset y que cada grupo tiene 1000 individuos. Se aplicarán entonces distintos algoritmos de clustring para que así se pueda escoger aquel que retorne mejores resultados.
+</div>
+
+<br/>
+<b>K-Means (K-Medias)</b>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se utilizará el algoritmo K-means con k igual a 3, tal como se indica en el gráfico.
+</div>
+
+```{r}
+
+#K-Medias
+a1 <- a
+a1$V3 <- NULL
+a1$V3 <- k_means(a1, 3)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Para evaluar el desempeño de este algoritmo se realiza la matriz de confusión y se estudia la tasa de aciertos de la misma.
+</div>
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;"><b>Atención:</b> En la mayoría de los casos se debe tener cuidado al observar la matriz de confusión pues en algunas ocasiones puede mostrar la tabla distinta. Para solucionar este inconveniente se utilizó la función fix_matrix().
+</div>
+
+```{r}
+tab <- table(as.matrix(a1$V3), a$V3)
+tab <- fix_matrix(tab)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se observa un excelente rendimiento del algoritmo pues solamente se equivoca en la clasificación de un individuo, teniendo así los resultados mostrados a continuación:
+</div>
+
+```{r, echo=FALSE}
+confusionMatrix(tab)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se puede observar entonces unos índices de exactitud de 0.9997, Sensitivity y Specificity casi 1.
+</div>
+
+<br/>
+<b>H-Clust (Clustering Jerárquico)</b>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se utilizará el algoritmo h-clust con k igual a 3, tal como se indica en el gráfico inicial. Para utilizar este algoritmo lo primero que se debe hacer es calcular la matriz de distancia:
+</div>
+
+```{r}
+a_hclust <- a
+a_hclust$V3 <- NULL
+
+#Calculamos la matriz de Distancia
+
+a_hclust <- dist(as.matrix(a_hclust))
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se probará entonces el algoritmo de clustering Jerárquico con 3 métodos distintos (Single, Complete y Average)
+</div>
+
+Single:
+
+```{r}
+#Single
+
+h_clust <- hclust(a_hclust, method="single")
+plot(h_clust, main="Dendrograma")
+
+pruning <- cutree(h_clust, k=3)
+plot(a$V1, a$V2, col=pruning, pch=19, cex=0.5, main="Single H_Clust A.csv")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=3.5)
+plot(dendrogram$upper, main="Dendrograma Podado")
+
+a1 <- a
+a1$V3<-pruning
+
+
+#Realizamos la matriz de confusión
+
+tab <- table(a1$V3, a$V3)
+tab <- fix_matrix(tab)
+confusionMatrix(tab)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Al observar la matriz de confusión y evaluarla de la manera correcta se puede notar que el rendimiento de este algoritmo con el método Single es terrible pues obtiene unos índices de exactitud de 0.334, Sensitivity y Specificity casi cero en los dos casos, menos en una puesto que el algoritmo arroja como resultado una clase para todo el dataset exceptuando dos puntos diferentes.
+</div>
+
+Complete:
+
+```{r}
+#Complete
+
+h_clust <- hclust(a_hclust, method="complete")
+plot(h_clust, main="Dendrograma")
+
+pruning <- cutree(h_clust, k=3)
+plot(a$V1, a$V2, col=pruning, pch=19, cex=0.5, main="Complete H_Clust A.csv")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=3.5)
+plot(dendrogram$upper, main="Dendrograma Podado")
+
+a1 <- a
+a1$V3<-pruning
+
+
+#Realizamos la matriz de confusión
+
+tab <- table(a1$V3, a$V3)
+tab <- fix_matrix(tab)
+confusionMatrix(tab)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Al observar la matriz de confusión y evaluarla de la manera correcta se puede notar que el rendimiento de este algoritmo con el método Complete es mucho mejor pues solamente se equivoca en dos individuos obtiene unos índices de exactitud de 0.9993, Sensitivity y Specificity casi 1.
+</div>
+
+Average:
+
+```{r}
+#Average
+
+h_clust <- hclust(a_hclust, method="average")
+plot(h_clust, main="Dendrograma")
+
+pruning <- cutree(h_clust, k=3)
+plot(a$V1, a$V2, col=pruning, pch=19, cex=0.5, main="Average H_Clust A.csv")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=15)
+plot(dendrogram$upper, main="Dendrograma Podado")
+
+a1 <- a
+a1$V3<-pruning
+
+
+#Realizamos la matriz de confusion
+
+tab <- table(a1$V3, a$V3)
+tab <- fix_matrix(tab)
+confusionMatrix(tab)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+<b>Atención:</b> Se debe tener cuidado al observar la matriz de confusión pues en algunas ocasiones puede mostrar la tabla distinta.
+</div>
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Al observar la matriz de confusión y evaluarla de la manera correcta se puede notar que el rendimiento de este algoritmo con el método Average es bueno pues solamente se equivoca en 8 individuos, 6 los coloca en una clase y 2 en otra. Obtiene entonces unos índices de exactitud de 0.998, Sensitivity y Specificity casi 1.
+</div>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se concluye así que el mejor algoritmo para este dataset es "k-medias" pues tuvo una exactitud de 0.9997.
+</div>
+
+</br>
+<h3>Dataset "A Big"</h3>
+
+<h4>Carga de la data y análisis exploratorio</h4>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realiza la carga de la data del dataset a.csv y realizamos el análisis exploratorio:
+</div>
+
+```{r}
+a<-read.csv("a_big.csv", header = F)
+dim(a)
+summary(a)
+
+#Al observar que el mínimo en la columna V3 (la columna clase) es 0, sumamos 1 al valor de la columna para no tener problemas con los colores al graficar:
+a$V3 = a$V3 + 1
+
+#Cantidad de individuos por clase
+table(a$V3)
+```
+```{r, echo=FALSE}
+plot(a, main = "Diagrama de dispersión de a_big.csv", col=a$V3)
+plot(a$V1, a$V2, col=a$V3, main = "a_big.csv")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se pueden observar entonces 3 grupos definidos en este dataset y que cada grupo tiene 100000 individuos. La distribución de este dataset es muy similar al dataset a.csv, con la diferencia que este tiene una cantidad mucho mayor de datos. Se realizará entonces un estudio con un algoritmo de k-medias implementado por el autor para estudiar el rendimiento del mismo con un dataset con una gran cantidad de datos.
+</div>
+
+<br/>
+<b>K-Means (K-Medias)</b>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se utilizará el algoritmo K-means, con una implementación distinta a la provista por la librería stats de R. Se elige un k igual a 3, tal como se indica en el gráfico inicial y se pasa NULL como parámetro, pues se podrían colocar los centros iniciales.
+</div>
+
+```{r}
+
+#K-Medias
+a1 <- a
+a1$V3 <- NULL
+a1 <- my_own_km(a1, 3, NULL)
+plot(a$V1, a$V2, col=a1$clusters, main = "a_big.csv")
+points(a1$centers, pch=19, col="black", cex=3)
+
+#Valores de los centros
+
+a1$centers
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se observa que esta implementación tarda un tiempo considerable en realizarse. Por tanto se tomará una muestra balanceada de la data para probar el rendimiento del algoritmo. La muestra que se tomó fue de tan solo 1000 inidividuos, sin embargo se nota la similitud entre a_big.csv y a.csv.
+</div>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+La idea al tomar la muestra es que no afecte tanto la predicción de los grupos aunque se reduzca la cantidad de individuos. Para ello se calculó la probabilidad de obtener "1", "2" o "3" y se le asignó a un vector de probabilidades. Este vector es del tamaño del dataset y luego es pasado por parámetro a la función sample() del paquete base de R y esto retorna la muestra.
+</div>
+
+```{r}
+p = vector(length = nrow(a))
+p[a[,"V3"]==1] = 1/300000
+p[a[,"V3"]==2] = 1/300000
+p[a[,"V3"]==3] = 1/300000
+
+a_sub <- sample(nrow(a), 1000, prob=p)
+a_sub<-a[a_sub,]
+plot(a_sub$V1, a_sub$V2, col=a_sub$V3)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se procede entonces a realizar el algoritmo k-medias implementado por el usuario.
+</div>
+
+```{r}
+
+#K-Medias
+a1 <- a_sub
+a1$V3 <- NULL
+a1 <- my_own_km(a1, 3, NULL)
+plot(a_sub$V1, a_sub$V2, col=a1$clusters, main = "K-medias de la muestra de a_big.csv")
+points(a1$centers, pch=19, col="black", cex=2)
+
+#Valores de los centros
+
+a1$centers
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Al observar el valor de los centros se puede notar que no varían con respecto al dataset con la totalidad de los datos, por tanto (en este caso) no se altera la calidad del algoritmo al variar la cantidad de datos a utilizar, siempre que se tome una muestra balanceada.
+</div>
+
+</br>
+<h3>Dataset "Good Luck"</h3>
+
+<h4>Carga de la data y análisis exploratorio</h4>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realiza la carga de la data del dataset a.csv y realizamos el análisis exploratorio:
+</div>
+
+```{r}
+good<-read.csv("good_luck.csv", header = F)
+
+dim(good)
+summary(good)
+
+#Al observar que el mínimo en la columna V3 (la columna clase) es 0, sumamos 1 al valor de la columna para no tener problemas con los colores al graficar:
+good$V11 = good$V11 + 1
+
+#Cantidad de individuos por clase
+table(good$V11)
+```
+```{r, echo=FALSE}
+plot(good, col=good$V11, main = "Diagrama de dispersión de good_luck.csv")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Según lo observado en el análisis exploratorio se concluye lo siguiente:
+- El set de datos tiene 10 variables.
+- Se tienen dos diferentes clases para los individuos.
+- Existen 513 individuos de la clase 1 y 487 de la clase 2.
+</div>
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+A simple vista se puede decir que los datos no son fácilmente separables pues se observa, en el diagrama de dispersión, que aún comparando de dos en dos las variables no existe ninguna combinación que defina claramente dos grupos. Se intentará de igual forma con los distintos algoritmos de clustering, estudiados en la materia, para estudiar los resultados obtenidos.
+</div>
+
+<b>K-Means (K-Medias)</b>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se utilizará el algoritmo K-means con k igual a 2, tal como se indica en el diagrama de dispersión.
+</div>
+
+```{r}
+
+#K-Medias
+g <- good
+g$V11 <- NULL
+g$V11 <- k_means(g, 2)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Para evaluar el desempeño de este algoritmo se realiza la matriz de confusión y se estudia la tasa de aciertos de la misma.
+</div>
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;"><b>Atención:</b> En la mayoría de los casos se debe tener cuidado al observar la matriz de confusión pues en algunas ocasiones puede mostrar la tabla distinta. Para solucionar este inconveniente se utilizó la función fix_matrix().
+</div>
+
+```{r}
+tab <- table(g$V11, good$V11)
+tab <- fix_matrix(tab)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se obtuvieron los resultados mostrados a continuación:
+</div>
+
+```{r, echo=FALSE}
+confusionMatrix(tab)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se puede observar entonces unos índices de exactitud de 0.52, Sensitivity y Specificity 0.5. Esto quiere decir que el modelo no es bueno y que acierta el 50% de las veces.
+</div>
+
+<br/>
+<b>H-Clust (Clustering Jerárquico)</b>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se utilizará el algoritmo h-clust con k igual a 2, tal como se indica en el gráfico inicial. Para utilizar este algoritmo lo primero que se debe hacer es calcular la matriz de distancia:
+</div>
+
+```{r}
+g_hclust <- good
+g_hclust$V11 <- NULL
+
+#Calculamos la matriz de Distancia
+
+g_hclust <- dist(as.matrix(g_hclust))
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se probará entonces el algoritmo de clustering Jerárquico con 3 métodos distintos (Single, Complete y Average)
+</div>
+
+Single:
+
+```{r}
+#Single
+
+h_clust <- hclust(g_hclust, method="single")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=2)
+plot(g, col=pruning, pch=19, cex=0.5)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=3.5)
+plot(dendrogram$upper)
+
+g <- good
+g$V11<-pruning
+
+
+#Realizamos la matriz de confusion
+
+tab <- table(g$V11, good$V11)
+tab <- fix_matrix(tab)
+confusionMatrix(tab)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Al observar la matriz de confusión y evaluarla de la manera correcta se puede notar que el rendimiento de este algoritmo con el método Single es terrible pues obtiene unos índices de exactitud de 0.514, Sensitivity y Specificity 1 y 0.002 respectivamente.
+</div>
+
+Complete:
+
+```{r}
+#Complete
+
+h_clust <- hclust(g_hclust, method="complete")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=2)
+plot(g, col=pruning, pch=19, cex=0.5)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=3.5)
+plot(dendrogram$upper)
+
+g <- good
+g$V11<-pruning
+
+
+#Realizamos la matriz de confusion
+
+tab <- table(g$V11, good$V11)
+tab <- fix_matrix(tab)
+confusionMatrix(tab)
+
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Al observar la matriz de confusión y evaluarla de la manera correcta se puede notar que el rendimiento de este algoritmo con el método Complete también es terrible pues obtiene unos índices de exactitud de 0.545, Sensitivity y Specificity casi 1 y 0.1 respectivamente.
+</div>
+
+Average:
+
+```{r}
+#Average
+
+h_clust <- hclust(g_hclust, method="average")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=2)
+plot(g, col=pruning, pch=19, cex=0.5)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=3.5)
+plot(dendrogram$upper)
+
+g <- good
+g$V11<-pruning
+
+
+#Realizamos la matriz de confusion
+
+tab <- table(g$V11, good$V11)
+tab <- fix_matrix(tab)
+confusionMatrix(tab)
+```
+
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Al observar la matriz de confusión y evaluarla de la manera correcta se puede notar que el rendimiento de este algoritmo con el método Average, al igual que los demás, no es bueno pues obtiene entonces unos índices de exactitud de 0.515, Sensitivity y Specificity casi 1 y 0.0004 respectivamente.
+</div>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+<b>Conclusión:</b> El "mejor" método para agrupar este set de datos es en este caso clustering jerárquico con el método complete pues tiene una exactitud de 0.54 y un True Positive Rate mayor que el resto. Sin embargo ninguno de ellos es capaz de separar estos conjuntos de manera eficiente. Se cree entonces que el set de datos no es linealmente separable y que deben tomarse otras medidas para la separación del mismo.
+</div>
+
+</br>
+<h3>Dataset "Guess"</h3>
+
+<h4>Carga de la data y análisis exploratorio</h4>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realiza la carga de la data del dataset guess.csv y realizamos el análisis exploratorio:
+</div>
+
+```{r}
+guess<-read.csv("guess.csv", header = F)
+dim(guess)
+summary(guess)
+plot(guess$V1, guess$V2, main="guess.csv")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Como se pudo observar, el dataset guess.csv no posee columna clase y a simple vista no se puede determinar la agrupación correcta de la data. Por tanto se determinará mediante el algoritmo k-medias y el "Codo de Jambu" la cantidad de grupos y los clusters de este dataset.
+</div>
+
+<b>Codo de Jambú</b>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+A continuación se realiza el método del codo de Jambú para saber cual es el k (número de clusters) de este dataset.
+</div>
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+El codo de Jambú es un método que examina la inercia intra-clase, explicada en función del número de clusters. Se debe elegir un k tal que al añadirle otro grupo no da un mejor modelado de los datos. De esta forma al observar la curva que proporciona la gráfica del Codo de Jambú debemos elegir el punto en el que la curva empiece a suavizarse; pues ese será el momento en el cual, al añadir otro grupo, el modelado de los datos no mejora.
+</div>
+
+```{r}
+elbow(guess)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+En el gráfico se observa que el número indicado de clusters es k=5, puesto que ese es el punto en el cual la curva comienza a suavizarse. Se debe tomar en cuenta que aunque un número mayor de clusters en teoría es más preciso, es mejor tomar un número intermedio pues tener un k muy grande no es lo ideal.
+</div>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Ya que el número de clusters ha sido definido, se procede a realizar los distintos algoritmos de clustering para observar los diferentes resultados. En este caso particular NO se podría decir con certeza cual algoritmo es el mejor, pues no sabemos la clasificación real de los datos.
+</div>
+
+<b>K-Means (K-Medias)</b>
+
+```{r}
+guess1<-guess
+guess1$V3 <- k_means(guess, 5)
+```
+
+<b>H-Clust (Clustering Jerárquico)</b>
+
+
+```{r}
+
+#Calculamos la matriz de Distancia
+
+guess_hclust <- dist(as.matrix(guess))
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se probará entonces el algoritmo de clustering Jerárquico con 3 métodos distintos (Single, Complete y Average)
+</div>
+
+Single:
+
+```{r}
+#Single
+
+h_clust <- hclust(guess_hclust, method="single")
+plot(h_clust, main="Dendrograma")
+
+pruning <- cutree(h_clust, k=5)
+plot(guess1$V1, guess1$V2, col=pruning, pch=19, cex=0.5, main="Single H_Clust guess.csv")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=5)
+plot(dendrogram$upper, main="Dendrograma Podado")
+```
+
+Complete:
+
+```{r}
+#Complete
+
+h_clust <- hclust(guess_hclust, method="complete")
+plot(h_clust, main="Dendrograma")
+
+pruning <- cutree(h_clust, k=5)
+plot(guess1$V1, guess1$V2, col=pruning, pch=19, cex=0.5, main="Complete H_Clust guess.csv")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=65)
+plot(dendrogram$upper, main="Dendrograma Podado")
+
+```
+
+Average:
+
+```{r}
+#Average
+
+h_clust <- hclust(guess_hclust, method="average")
+plot(h_clust, main="Dendrograma")
+
+pruning <- cutree(h_clust, k=5)
+plot(guess1$V1, guess1$V2, col=pruning, pch=19, cex=0.5, main="Average H_Clust guess.csv")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=26)
+plot(dendrogram$upper, main="Dendrograma Podado")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Como se dijo anteriormente, no se podría decir con certeza cual de todos los algoritmos es el mejor pues no se conoce la clasificación real. Sin embargo, visualmente se puede decir que K-Medias es el más acertado dado que separa los grupos de una forma en la que sería natural hacerlo. Por otro lado el algoritmo de clustering jerárquico con los métodos "Single" y "Average" dan resultados un poco extraños visualmente.
+</div>
+
+
+</br>
+<h3>Dataset "Help"</h3>
+
+<h4>Carga de la data y análisis exploratorio</h4>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realiza la carga de la data del dataset help.csv y realizamos el análisis exploratorio:
+</div>
+
+```{r}
+help<-read.csv("help.csv", header = F)
+dim(help)
+summary(help)
+head(help, n = 6)
+plot(help, main="Diagrama de dispersión de help.csv")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Como se observa en el diagrama de dispersión, el dataset help.csv posee 4 columnas donde una de ellas es la columna clase. Por tanto se utilizará un graficador en 3 dimensiones para evaluar la gráfica de la data en 3D.
+</div>
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Sin embargo, se puede notar que la columna clase está definida por números reales y no enteros. Las clases entonces pueden estar definidas por intervalos.
+</div>
+
+```{r}
+scatterplot3d(help$V1, help$V2, help$V3, main = "Gráfica 3D de help.csv (Sin Clases Definidas)")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Cuando se observa la gráfica en 3 dimensiones lo primero que se nota es la palabra "SOS". A priori se podría decir que son dos clases, una clase para las "S" y otra para la clase "O", pero como se tiene la columna de las clases reales se estudiará que tan cierto es esto.
+</div>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Dado que la columna clase está definida con números reales, y no números enteros, se debe transformar para tener un mejor entendimiento de la misma. Para esto se realiza primero un histograma en el que se estudia la frecuencia con la que se repite cada número en la columna clase.
+</div>
+
+```{r}
+histo <- hist(help$V4)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se procede entonces a cambiar los datos de la columna clase con una función que, por cada valor en el histograma, le agrega un valor del 1 al 11 en número entero.
+</div>
+
+```{r}
+res <- sapply(as.matrix(help$V4), class_help, histo=histo)
+```
+
+```{r, echo=FALSE}
+help1<-help
+help2<-help
+help1$V4<-res
+help2$V4<-res
+scatterplot3d(help$V1, help$V2, help$V3, color=help1$V4, main = "Gráfica 3D de help.csv (Con Clases Definidas)")
+plot(help, col=help1$V4, main="Diagrama de dispersión de help.csv Con Clases Definidas")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+En el diagrama de dispersión aparecen entonces 11 clases, 6 en cada una de las "S" y 5 en la letra "O" que tiene forma de espiral.
+</div>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se podría concluir entonces que el dataset podría agruparse de dos maneras: 
+- Dos clusters, en los que cada uno están dividos en 5 o 6 clusters más (dependiendo de si es una "S" o una "O").
+- Once clusters en los cuales no se diferencian si son letras "S" u "O".
+</div>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realizarán ahora pruebas con K-Medias y Clustering Jerárquico para ver cual algoritmo será más exacto con este dataset. Se probará con k=11 y k=2.
+</div>
+
+<b>K-Means (K-Medias) K=2</b>
+
+```{r, results="hide"}
+help1 <- help
+help1$V4 <- NULL
+help1$V4 <- k_means(help1, 2)
+```
+```{r}
+plot(help, col=help1$V4, main="Diagrama de dispersión de help.csv Con 2 Clases Definidas")
+scatterplot3d(help$V1, help$V2, help$V3, color=help1$V4, main = "Gráfica 3D de help.csv (Con 2 Clases Definidas)")
+```
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Con solamente ver la gráfica se sabe que el algoritmo no funciona de la manera esperada pues no toma como clases las "S" y la "O".
+</div>
+
+<b>K-Means (K-Medias) K=11</b>
+
+```{r, results="hide"}
+help1 <- help
+help1$V4 <- NULL
+help1$V4 <- k_means(help1, 11)
+plot(help, col=help1$V4)
+```
+
+<b>H-Clust (Clustering Jerárquico)</b>
+
+
+```{r}
+help_hclust <- help
+help_hclust$V4 <- NULL
+
+#Calculamos la matriz de Distancia
+
+help_hclust <- dist(as.matrix(help_hclust))
+
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se probará entonces el algoritmo de clustering Jerárquico con 3 métodos distintos (Single, Complete y Average) y con los dos k diferentes.
+</div>
+
+Single:
+
+```{r}
+#Single, k=2
+
+h_clust <- hclust(help_hclust, method="single")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=2)
+plot(help, col=pruning, main = "H-Clust Single help.csv con k=2")
+scatterplot3d(help$V1, help$V2, help$V3, color=pruning, main = "H-Clust Single help.csv con k=2")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=12)
+plot(dendrogram$upper)
+
+```
+
+```{r}
+#Single, k=11
+
+h_clust <- hclust(help_hclust, method="single")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=11)
+plot(help, col=pruning, main = "H-Clust Single help.csv con k=11")
+scatterplot3d(help$V1, help$V2, help$V3, color=pruning, main = "H-Clust Single help.csv con k=11")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=2.2)
+plot(dendrogram$upper)
+
+```
+
+Complete:
+
+```{r}
+#Complete, k=2
+
+h_clust <- hclust(help_hclust, method="complete")
+#plot(h_clust) Se queda pegada la máquina
+
+pruning <- cutree(h_clust, k=2)
+plot(help, col=pruning, main = "H-Clust Complete help.csv con k=2")
+scatterplot3d(help$V1, help$V2, help$V3, color=pruning, main = "H-Clust Complete help.csv con k=2")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=60)
+plot(dendrogram$upper)
+
+```
+```{r}
+#Complete, k=11
+
+h_clust <- hclust(help_hclust, method="complete")
+#plot(h_clust) Se queda pegada la máquina
+
+pruning <- cutree(h_clust, k=11)
+plot(help, col=pruning, main = "H-Clust Complete help.csv con k=11")
+scatterplot3d(help$V1, help$V2, help$V3, color=pruning, main = "H-Clust Complete help.csv con k=11")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=28)
+plot(dendrogram$upper)
+
+```
+
+Average:
+
+```{r}
+#Average, k=2
+
+h_clust <- hclust(help_hclust, method="average")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=2)
+plot(help, col=pruning, main = "H-Clust Complete help.csv con k=2")
+scatterplot3d(help$V1, help$V2, help$V3, color=pruning, main = "H-Clust Complete help.csv con k=2")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=36)
+plot(dendrogram$upper)
+
+```
+
+```{r}
+#Average, k=11
+
+h_clust <- hclust(help_hclust, method="average")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=11)
+plot(help, col=pruning, main = "H-Clust Complete help.csv con k=11")
+scatterplot3d(help$V1, help$V2, help$V3, color=pruning, main = "H-Clust Complete help.csv con k=11")
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=17)
+plot(dendrogram$upper)
+
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Visualmente se puede notar que con k=2 ninguno de estos algoritmos acierta perfectamente en las clases "S" y "O". También se observa que con k=11 todos actúan de maneras similares, sin embargo el más acertado es k-medias, colocando 6 clases a la "O" y 4 clases a las "S".
+</div>
+
+</br>
+<h3>Dataset "H.csv" (Espiral "O")</h3>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Anteriormente se estudió el dataset "Help", en el mismo podían existir dos tipos de clustering. Uno de ellos agrupa las letras "S" en un cluster y en el otro la letra "O"; mientras que la otra clase de clustering agrupa clases dentro de las letras, dando a cada "S" 6 clases y a la "O" 5 clases.
+</div>
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+A continuación se estudiará individualmente al dataset que contiene los datos de la letra "O". Se le colocarán entonces las 5 clases que se observaron en el estudio anterior y se buscará encontrar el método que mejor agrupe esos datos.
+</div>
+
+
+<h4>Carga de la data y análisis exploratorio</h4>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realiza la carga de la data del dataset h.csv y realizamos el análisis exploratorio:
+</div>
+
+```{r}
+h<-read.csv("h.csv", header = F)
+dim(h)
+summary(h)
+head(h, n = 6)
+plot(h, main="Diagrama de dispersión de h.csv")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se procede entonces a cambiar los datos de la columna clase con una función que le agrega un valor del 1 al 5 en número entero.
+</div>
+
+```{r}
+histo <- hist(h$V4)
+
+res <- sapply(as.matrix(h$V4), class_h, histo=histo)
+h$V4<-res
+plot(h, col=h$V4, main="Diagrama de dispersión de h.csv Con Clases Definidas")
+scatterplot3d(h$V1, h$V2, h$V3, color=h$V4, main = "Gráfica 3D de h.csv (Con Clases Definidas)")
+```
+
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realizarán ahora pruebas con K-Medias y Clustering Jerárquico para ver cual algoritmo será más exacto con este dataset. 
+</div>
+
+<b>K-Means (K-Medias)</b>
+
+```{r, results="hide"}
+h1<-h
+h1$V4 <- NULL
+h1$V4 <- k_means(h1, 5)
+plot(h1, col=h1$V4, main="Diagrama de dispersión del k-medias de h.csv")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Con solamente ver la gráfica se sabe que el algoritmo no funciona de la manera esperada.
+</div>
+
+<b>H-Clust (Clustering Jerárquico)</b>
+
+
+```{r}
+help_hclust <- h
+help_hclust$V4 <- NULL
+
+#Calculamos la matriz de Distancia
+
+help_hclust <- dist(as.matrix(help_hclust))
+
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se probará entonces el algoritmo de clustering Jerárquico con 3 métodos distintos (Single, Complete y Average) y con k=5.
+</div>
+
+Single:
+
+```{r}
+#Single
+
+h_clust <- hclust(help_hclust, method="single")
+plot(h_clust)
+pruning <- cutree(h_clust, k=5)
+plot(h, col=pruning)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=2.2)
+plot(dendrogram$upper)
+
+```
+
+Complete:
+
+```{r}
+#Complete
+
+h_clust <- hclust(help_hclust, method="complete")
+#plot(h_clust) Se queda pegada la máquina
+
+pruning <- cutree(h_clust, k=5)
+plot(h, col=pruning)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=60)
+plot(dendrogram$upper)
+
+```
+
+Average:
+
+```{r}
+#Average
+
+h_clust <- hclust(help_hclust, method="average")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=5)
+plot(h, col=pruning)
+
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=36)
+plot(dendrogram$upper)
+
+```
+
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Visualmente se puede notar que ninguno de estos algoritmos acierta perfectamente en las clases definidas. También se observa que el más acertado es k-medias.
+</div>
+
+
+
+</br>
+<h3>Dataset "moon.csv"</h3>
+
+<h4>Carga de la data y análisis exploratorio</h4>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realiza la carga de la data del dataset moon.csv y realizamos el análisis exploratorio:
+</div>
+
+```{r}
+moon<-read.csv("moon.csv", header = F)
+dim(moon)
+summary(moon)
+moon$V3 = moon$V3 + 1
+plot(moon$V1, moon$V2, col=moon$V3, pch=19, cex=0.5)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realizarán ahora pruebas con K-Medias y Clustering Jerárquico para ver cual algoritmo será más exacto con este dataset. 
+</div>
+
+<b>K-Means (K-Medias)</b>
+
+```{r, results="hide"}
+m<-moon
+m$V3 <- NULL
+m$V3 <- k_means(m, 2)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Con solamente ver la gráfica se sabe que el algoritmo no funciona de la manera esperada pues debería tomar cada curva como clases distintas.
+</div>
+
+<b>H-Clust (Clustering Jerárquico)</b>
+
+
+```{r}
+moon_hclust <- moon
+moon_hclust$V3 <- NULL
+
+#Calculamos la matriz de Distancia
+
+moon_hclust <- as.matrix(moon_hclust)
+moon_hclust <- dist(moon_hclust)
+
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se probará entonces el algoritmo de clustering Jerárquico con 3 métodos distintos (Single, Complete y Average) y con k=2.
+</div>
+
+Single:
+
+```{r}
+#Single
+
+h_clust <- hclust(moon_hclust, method="single")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=2)
+plot(moon$V1, moon$V2, col=pruning, pch=19, cex=0.5)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=5)
+plot(dendrogram$upper)
+
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Como se observa en la gráfica el algoritmo de clasificación jerárquica con el método single es acertado. Al realizar la matriz de confusión obtenemos:
+</div>
+
+
+```{r}
+confusionMatrix(pruning, moon$V3)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Con una exactitud del 100%, esto se debe a la forma en el que el método single obtiene el resultado, pus toma siempre la mínimo distancia entre los puntos al momento de agrupar.
+</div>
+
+Complete:
+
+```{r}
+#Complete
+h_clust <- hclust(moon_hclust, method="complete")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=2)
+plot(moon$V1, moon$V2, col=pruning, pch=19, cex=0.5)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=3)
+plot(dendrogram$upper)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Como se observa en la gráfica el algoritmo de clasificación jerárquica con el método complete también no es acertado. 
+</div>
+
+Average:
+
+```{r}
+#Average
+h_clust <- hclust(moon_hclust, method="average")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=2)
+plot(moon$V1, moon$V2, col=pruning, pch=19, cex=0.5)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=1.4)
+plot(dendrogram$upper)
+```
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Definitivamente para este set de datos el clustering jerárquico (single y average) es más acertado, a diferencia del set de datos a.csv en el que k-means siempre daba mejores resultados. Para este caso en partcular los métodos single y average dan exactamente igual.
+</div>
+
+<h3>Dataset "S.csv"</h3>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Anteriormente se estudió el dataset "Help", en el mismo podían existir dos tipos de clustering. Uno de ellos agrupa las letras "S" en un cluster y en el otro la letra "O"; mientras que la otra clase de clustering agrupa clases dentro de las letras, dando a cada "S" 6 clases y a la "O" 5 clases.
+</div>
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+A continuación se estudiará individualmente al dataset que contiene los datos de la letra "S". Se le colocarán entonces las 6 clases que se observaron en el estudio anterior y se buscará encontrar el método que mejor agrupe esos datos.
+</div>
+
+
+<h4>Carga de la data y análisis exploratorio</h4>
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realiza la carga de la data del dataset s.csv y realizamos el análisis exploratorio:
+</div>
+
+```{r}
+s<-read.csv("s.csv", header = F)
+
+dim(s)
+summary(s)
+
+plot(s, main="Diagrama de dispersión de s.csv")
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se procede entonces a cambiar los datos de la columna clase con una función que le agrega un valor del 1 al 6 en número entero.
+</div>
+
+```{r}
+histo <- hist(s$V4)
+
+res <- sapply(as.matrix(s$V4), class_s, histo=histo)
+s1<-s
+s1$V4<-res
+plot(s, col=s1$V4)
+```
+
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se realizarán ahora pruebas con K-Medias y Clustering Jerárquico para ver cual algoritmo será más exacto con este dataset. 
+</div>
+
+<b>K-Means (K-Medias)</b>
+
+```{r, results="hide"}
+s1 <- s
+s1$V4 <- NULL
+k_means<-k_means(s1, 6)
+plot(s, col=k_means)
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Con solamente ver la gráfica se sabe que el algoritmo no funciona de la manera esperada.
+</div>
+
+<b>H-Clust (Clustering Jerárquico)</b>
+
+
+```{r}
+help_hclust <- s
+help_hclust$V4 <- NULL
+
+#Calculamos la matriz de Distancia
+
+help_hclust <- dist(as.matrix(help_hclust))
+
+```
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Se probará entonces el algoritmo de clustering Jerárquico con 3 métodos distintos (Single, Complete y Average) y con k=6.
+</div>
+
+Single:
+
+```{r}
+#Single
+
+h_clust <- hclust(help_hclust, method="single")
+plot(h_clust)
+pruning <- cutree(h_clust, k=6)
+plot(h, col=pruning)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=2.2)
+plot(dendrogram$upper)
+
+```
+
+Complete:
+
+```{r}
+#Complete
+
+h_clust <- hclust(help_hclust, method="complete")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=6)
+plot(h, col=pruning)
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=60)
+plot(dendrogram$upper)
+
+```
+
+Average:
+
+```{r}
+#Average
+
+h_clust <- hclust(help_hclust, method="average")
+plot(h_clust)
+
+pruning <- cutree(h_clust, k=6)
+plot(h, col=pruning)
+
+
+dendrogram <- as.dendrogram(h_clust)
+dendrogram <- cut(dendrogram, h=36)
+plot(dendrogram$upper)
+
+```
+
+
+<div style="text-align: justify; text-indent: 2em; line-height: 30px;">
+Visualmente se puede notar que ninguno de estos algoritmos acierta perfectamente en las clases definidas. También se observa que el más acertado es k-medias.
+</div>
+
+
+<h2>Por falta de tiempo la explicación de las funciones del archivo funciones.R queda pendiente</h2>
